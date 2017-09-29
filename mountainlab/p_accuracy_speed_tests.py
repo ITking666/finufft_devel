@@ -19,11 +19,12 @@ class Processor:
 	parameters=[
 		{"name":"num_nonuniform_points","optional":True,"default_value":1000},
 		{"name":"num_uniform_points","optional":True,"default_value":1000},
-		{"name":"eps","optional":True,"default_value":"1e-6"}
+		{"name":"eps","optional":True,"default_value":"1e-6"},
+		{"name":"num_trials","optional":True,"default_value":"10"}
 	]
 	opts={"cache_output":False}
 	def run(self,args):
-		accuracy_speed_tests(int(args['num_nonuniform_points']),int(args['num_uniform_points']),float(args['eps']))
+		accuracy_speed_tests(int(args['num_nonuniform_points']),int(args['num_uniform_points']),float(args['eps']),int(args['num_trials']))
 		return True
 
 PM=ProcessorManager()
