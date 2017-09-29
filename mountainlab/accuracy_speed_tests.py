@@ -18,7 +18,7 @@ def print_report(label,elapsed,Xest,Xtrue,npts):
 	print('    nu.pts/sec      %g' % (npts/elapsed))
 	print('')
 
-def accuracy_speed_tests(num_nonuniform_points,num_uniform_points,eps):
+def accuracy_speed_tests(num_nonuniform_points,num_uniform_points,eps,num_trials):
 	nj,nk = int(num_nonuniform_points),int(num_nonuniform_points)
 	iflag=1
 	num_samples=int(np.minimum(20,num_uniform_points*0.5+1)) #for estimating accuracy
@@ -32,140 +32,146 @@ def accuracy_speed_tests(num_nonuniform_points,num_uniform_points,eps):
 	###### 1-d
 	ms=int(num_uniform_points)
 
+	print('Generating sample data...')
+	timer=time.time()
 	xj=np.random.rand(nj)*2*math.pi-math.pi
 	cj=np.random.rand(nj)+1j*np.random.rand(nj);
-	fk=np.zeros([ms],dtype=np.complex128)
-	timer=time.time()
-	ret=finufftpy.finufft1d1(xj,cj,iflag,eps,ms,fk)
-	elapsed=time.time()-timer
-
-	k=np.arange(-np.floor(ms/2),np.floor((ms-1)/2+1))
-	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(cj * np.exp(1j*k[ii]*xj))
-		Xtrue[ii]=fk[ii]
-	print_report('finufft1d1',elapsed,Xest,Xtrue,nj)
-
-	xj=np.random.rand(nj)*2*math.pi-math.pi
-	cj=np.zeros([nj],dtype=np.complex128);
+	sk=np.random.rand(nj)*2*math.pi-math.pi
 	fk=np.random.rand(ms)+1j*np.random.rand(ms);
+	print('Elapsed time for generating sample data: %g sec' % (time.time()-timer))
+	
+	fk_out=np.zeros([ms],dtype=np.complex128)
 	timer=time.time()
-	ret=finufftpy.finufft1d2(xj,cj,iflag,eps,ms,fk)
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft1d1(xj,cj,iflag,eps,ms,fk_out)
 	elapsed=time.time()-timer
 
 	k=np.arange(-np.floor(ms/2),np.floor((ms-1)/2+1))
 	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(fk * np.exp(1j*k*xj[ii]))
-		Xtrue[ii]=cj[ii]
-	print_report('finufft1d2',elapsed,Xest,Xtrue,nj)
+		Xtrue[ii]=np.sum(cj * np.exp(1j*k[ii]*xj))
+		Xest[ii]=fk_out[ii]
+	print_report('finufft1d1',elapsed,Xest,Xtrue,nj*num_trials)
 
-	x=np.random.rand(nj)*2*math.pi-math.pi
-	c=np.random.rand(nj)+1j*np.random.rand(nj);
-	s=np.random.rand(nk)*2*math.pi-math.pi
-	f=np.zeros([nk],dtype=np.complex128)
+	cj_out=np.zeros([nj],dtype=np.complex128);
 	timer=time.time()
-	ret=finufftpy.finufft1d3(x,c,iflag,eps,s,f)
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft1d2(xj,cj_out,iflag,eps,ms,fk)
+	elapsed=time.time()-timer
+
+	k=np.arange(-np.floor(ms/2),np.floor((ms-1)/2+1))
+	for ii in np.arange(0,num_samples):
+		Xtrue[ii]=np.sum(fk * np.exp(1j*k*xj[ii]))
+		Xest[ii]=cj_out[ii]
+	print_report('finufft1d2',elapsed,Xest,Xtrue,nj*num_trials)
+
+	fk_out=np.zeros([nk],dtype=np.complex128)
+	timer=time.time()
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft1d3(xj,cj,iflag,eps,sk,fk_out)
 	elapsed=time.time()-timer
 
 	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(c * np.exp(1j*s[ii]*x))
-		Xtrue[ii]=f[ii]
-	print_report('finufft1d3',elapsed,Xest,Xtrue,nj+nk)
+		Xtrue[ii]=np.sum(cj * np.exp(1j*sk[ii]*xj))
+		Xest[ii]=fk_out[ii]
+	print_report('finufft1d3',elapsed,Xest,Xtrue,(nj+nk)*num_trials)
 
 	###### 2-d
+
 	ms=int(np.ceil(num_uniform_points**(1/2)))
 	mt=ms
 
-	xj=np.random.rand(nj)*2*math.pi-math.pi
-	yj=np.random.rand(nj)*2*math.pi-math.pi
-	cj=np.random.rand(nj)+1j*np.random.rand(nj);
-	fk=np.zeros([ms,mt],dtype=np.complex128,order='F')
+	print('Generating sample data...')
 	timer=time.time()
-	ret=finufftpy.finufft2d1(xj,yj,cj,iflag,eps,ms,mt,fk)
-	elapsed=time.time()-timer
-
-	Ks,Kt=np.mgrid[-np.floor(ms/2):np.floor((ms-1)/2+1),-np.floor(mt/2):np.floor((mt-1)/2+1)]
-	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(cj * np.exp(1j*(Ks.ravel()[ii]*xj+Kt.ravel()[ii]*yj)))
-		Xtrue[ii]=fk.ravel()[ii]
-	print_report('finufft2d1',elapsed,Xest,Xtrue,nj)
-
-	xj=np.random.rand(nj)*2*math.pi-math.pi
 	yj=np.random.rand(nj)*2*math.pi-math.pi
-	cj=np.zeros([nj],dtype=np.complex128);
+	tk=np.random.rand(nj)*2*math.pi-math.pi
 	fk=np.random.rand(ms,mt)+1j*np.random.rand(ms,mt);
+	print('Elapsed time for generating sample data: %g sec' % (time.time()-timer))	
+
+	fk_out=np.zeros([ms,mt],dtype=np.complex128,order='F')
 	timer=time.time()
-	ret=finufftpy.finufft2d2(xj,yj,cj,iflag,eps,ms,mt,fk)
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft2d1(xj,yj,cj,iflag,eps,ms,mt,fk_out)
+	elapsed=time.time()-timer
+
+	Ks,Kt=np.mgrid[-np.floor(ms/2):np.floor((ms-1)/2+1),-np.floor(mt/2):np.floor((mt-1)/2+1)]
+	fk_out_vec=fk_out.ravel()
+	Ks_vec=Ks.ravel()
+	Kt_vec=Kt.ravel()
+	for ii in np.arange(0,num_samples):
+		Xtrue[ii]=np.sum(cj * np.exp(1j*(Ks_vec[ii]*xj+Kt_vec[ii]*yj)))
+		Xest[ii]=fk_out_vec[ii]
+	print_report('finufft2d1',elapsed,Xest,Xtrue,nj*num_trials)
+
+	cj_out=np.zeros([nj],dtype=np.complex128);
+	timer=time.time()
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft2d2(xj,yj,cj_out,iflag,eps,ms,mt,fk)
 	elapsed=time.time()-timer
 
 	Ks,Kt=np.mgrid[-np.floor(ms/2):np.floor((ms-1)/2+1),-np.floor(mt/2):np.floor((mt-1)/2+1)]
 	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(fk * np.exp(1j*(Ks*xj[ii]+Kt*yj[ii])))
-		Xtrue[ii]=cj[ii]
-	print_report('finufft2d2',elapsed,Xest,Xtrue,nj)
+		Xtrue[ii]=np.sum(fk * np.exp(1j*(Ks*xj[ii]+Kt*yj[ii])))
+		Xest[ii]=cj_out[ii]
+	print_report('finufft2d2',elapsed,Xest,Xtrue,nj*num_trials)
 
-	x=np.random.rand(nj)*2*math.pi-math.pi
-	y=np.random.rand(nj)*2*math.pi-math.pi
-	c=np.random.rand(nj)+1j*np.random.rand(nj);
-	s=np.random.rand(nk)*2*math.pi-math.pi
-	t=np.random.rand(nk)*2*math.pi-math.pi
-	f=np.zeros([nk],dtype=np.complex128)
+	fk_out=np.zeros([nk],dtype=np.complex128)
 	timer=time.time()
-	ret=finufftpy.finufft2d3(x,y,c,iflag,eps,s,t,f)
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft2d3(xj,yj,cj,iflag,eps,sk,tk,fk_out)
 	elapsed=time.time()-timer
 
 	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(c * np.exp(1j*(s[ii]*x+t[ii]*y)))
-		Xtrue[ii]=f[ii]
-	print_report('finufft2d3',elapsed,Xest,Xtrue,nj+nk)
+		Xtrue[ii]=np.sum(cj * np.exp(1j*(sk[ii]*xj+tk[ii]*yj)))
+		Xest[ii]=fk_out[ii]
+	print_report('finufft2d3',elapsed,Xest,Xtrue,(nj+nk)*num_trials)
 
 	###### 3-d
 	ms=int(np.ceil(num_uniform_points**(1/3)))
 	mt=ms
 	mu=ms
-
-	xj=np.random.rand(nj)*2*math.pi-math.pi
-	yj=np.random.rand(nj)*2*math.pi-math.pi
-	zj=np.random.rand(nj)*2*math.pi-math.pi
-	cj=np.random.rand(nj)+1j*np.random.rand(nj);
-	fk=np.zeros([ms,mt,mu],dtype=np.complex128,order='F')
+	
+	print('Generating sample data...')
 	timer=time.time()
-	ret=finufftpy.finufft3d1(xj,yj,zj,cj,iflag,eps,ms,mt,mu,fk)
-	elapsed=time.time()-timer
-
-	Ks,Kt,Ku=np.mgrid[-np.floor(ms/2):np.floor((ms-1)/2+1),-np.floor(mt/2):np.floor((mt-1)/2+1),-np.floor(mu/2):np.floor((mu-1)/2+1)]
-	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(cj * np.exp(1j*(Ks.ravel()[ii]*xj+Kt.ravel()[ii]*yj+Ku.ravel()[ii]*zj)))
-		Xtrue[ii]=fk.ravel()[ii]
-	print_report('finufft3d1',elapsed,Xest,Xtrue,nj)
-
-	xj=np.random.rand(nj)*2*math.pi-math.pi
-	yj=np.random.rand(nj)*2*math.pi-math.pi
 	zj=np.random.rand(nj)*2*math.pi-math.pi
-	cj=np.zeros([nj],dtype=np.complex128);
+	uk=np.random.rand(nj)*2*math.pi-math.pi
 	fk=np.random.rand(ms,mt,mu)+1j*np.random.rand(ms,mt,mu);
+	print('Elapsed time for generating sample data: %g sec' % (time.time()-timer))	
+
+	fk_out=np.zeros([ms,mt,mu],dtype=np.complex128,order='F')
 	timer=time.time()
-	ret=finufftpy.finufft3d2(xj,yj,zj,cj,iflag,eps,ms,mt,mu,fk)
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft3d1(xj,yj,zj,cj,iflag,eps,ms,mt,mu,fk_out)
+	elapsed=time.time()-timer
+
+	Ks,Kt,Ku=np.mgrid[-np.floor(ms/2):np.floor((ms-1)/2+1),-np.floor(mt/2):np.floor((mt-1)/2+1),-np.floor(mu/2):np.floor((mu-1)/2+1)]
+	fk_out_vec=fk_out.ravel()
+	Ks_vec=Ks.ravel()
+	Kt_vec=Kt.ravel()
+	Ku_vec=Ku.ravel()
+	for ii in np.arange(0,num_samples):
+		Xtrue[ii]=np.sum(cj * np.exp(1j*(Ks_vec[ii]*xj+Kt_vec[ii]*yj+Ku_vec[ii]*zj)))
+		Xest[ii]=fk_out_vec[ii]
+	print_report('finufft3d1',elapsed,Xest,Xtrue,nj*num_trials)
+
+	cj_out=np.zeros([nj],dtype=np.complex128);
+	timer=time.time()
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft3d2(xj,yj,zj,cj_out,iflag,eps,ms,mt,mu,fk)
 	elapsed=time.time()-timer
 
 	Ks,Kt,Ku=np.mgrid[-np.floor(ms/2):np.floor((ms-1)/2+1),-np.floor(mt/2):np.floor((mt-1)/2+1),-np.floor(mu/2):np.floor((mu-1)/2+1)]
 	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(fk * np.exp(1j*(Ks*xj[ii]+Kt*yj[ii]+Ku*zj[ii])))
-		Xtrue[ii]=cj[ii]
-	print_report('finufft3d2',elapsed,Xest,Xtrue,nj)
+		Xtrue[ii]=np.sum(fk * np.exp(1j*(Ks*xj[ii]+Kt*yj[ii]+Ku*zj[ii])))
+		Xest[ii]=cj_out[ii]
+	print_report('finufft3d2',elapsed,Xest,Xtrue,nj*num_trials)
 
-	x=np.random.rand(nj)*2*math.pi-math.pi
-	y=np.random.rand(nj)*2*math.pi-math.pi
-	z=np.random.rand(nj)*2*math.pi-math.pi
-	c=np.random.rand(nj)+1j*np.random.rand(nj);
-	s=np.random.rand(nk)*2*math.pi-math.pi
-	t=np.random.rand(nk)*2*math.pi-math.pi
-	u=np.random.rand(nk)*2*math.pi-math.pi
-	f=np.zeros([nk],dtype=np.complex128)
+	fk_out=np.zeros([nk],dtype=np.complex128)
 	timer=time.time()
-	ret=finufftpy.finufft3d3(x,y,z,c,iflag,eps,s,t,u,f)
+	for trial in np.arange(0,num_trials):
+		ret=finufftpy.finufft3d3(xj,yj,zj,cj,iflag,eps,sk,tk,uk,fk_out)
 	elapsed=time.time()-timer
 
 	for ii in np.arange(0,num_samples):
-		Xest[ii]=np.sum(c * np.exp(1j*(s[ii]*x+t[ii]*y+u[ii]*z)))
-		Xtrue[ii]=f[ii]
-	print_report('finufft3d3',elapsed,Xest,Xtrue,nj+nk)
+		Xtrue[ii]=np.sum(cj * np.exp(1j*(sk[ii]*xj+tk[ii]*yj+uk[ii]*zj)))
+		Xest[ii]=fk_out[ii]
+	print_report('finufft3d3',elapsed,Xest,Xtrue,(nj+nk)*num_trials)

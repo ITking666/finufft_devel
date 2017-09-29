@@ -1,6 +1,16 @@
 #!/usr/bin/python3
 
-from accuracy_speed_tests import *
+from accuracy_speed_tests import accuracy_speed_tests
+
+import sys
+import os, inspect
+
+# append the parent path to search directory
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+sys.path.insert(0,currentdir+'/../../../mlpython1/mlpy') 
+
+# imports from mlpy
+from mlpy import ProcessorManager
 
 class Processor:
 	name='finufft.accuracy_speed_tests'
@@ -15,3 +25,8 @@ class Processor:
 	def run(self,args):
 		accuracy_speed_tests(int(args['num_nonuniform_points']),int(args['num_uniform_points']),float(args['eps']))
 		return True
+
+PM=ProcessorManager()
+PM.registerProcessor(Processor())
+if not PM.run(sys.argv):
+	exit(-1)
