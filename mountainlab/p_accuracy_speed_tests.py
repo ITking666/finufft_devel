@@ -7,7 +7,7 @@ import os, inspect
 
 # append the parent path to search directory
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.insert(0,currentdir+'/../../../mlpython1/mlpy') 
+sys.path.insert(0,currentdir+'/../../../mlpython1') 
 
 # imports from mlpy
 from mlpy import ProcessorManager
