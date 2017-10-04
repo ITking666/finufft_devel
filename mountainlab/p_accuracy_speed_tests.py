@@ -1,35 +1,42 @@
-#!/usr/bin/python3
-
-from accuracy_speed_tests import accuracy_speed_tests
-
 import sys
-import os, inspect
 import numpy as np
 
-# append the parent path to search directory
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.insert(0,currentdir+'/../../../mlpython1') 
-
-# imports from mlpy
 from mlpy import ProcessorManager
+from accuracy_speed_tests import accuracy_speed_tests
 
-class Processor:
-	name='finufft.accuracy_speed_tests'
-	inputs=[]
-	outputs=[]
-	parameters=[
-		{"name":"num_nonuniform_points","optional":True,"default_value":1000},
-		{"name":"num_uniform_points","optional":True,"default_value":1000},
-		{"name":"eps","optional":True,"default_value":"1e-6"},
-		{"name":"num_trials","optional":True,"default_value":"10"},
-		{"name":"random_seed","optional":True,"default_value":"0"}
-	]
-	def run(self,args):
-		np.random.seed(int(args['random_seed']))
-		accuracy_speed_tests(int(args['num_nonuniform_points']),int(args['num_uniform_points']),float(args['eps']),int(args['num_trials']))
-		return True
+def p_accuracy_speed_tests(*,num_nonuniform_points=1000,num_uniform_points=1000,eps=1e-6,num_trials=10,random_seed=0):
+    """
+    Perform accuracy and speed tests for finufft
+
+    Parameters
+    ----------    
+    num_nonuniform_points : int
+        (Optional) Number of non-uniform points for the tests
+    num_uniform_points : int
+        (Optional) Number of uniform points for the tests
+    eps : double
+        (Optional) The precision for calculating the nufft
+    num_trials : int
+        (Optional) Number of runs per test for purpose of timing
+    random_seed : int
+        (Optional) A random seed to initialize the random number generator prior to generating the example arrays
+    """    
+    np.random.seed(random_seed)
+    accuracy_speed_tests(num_nonuniform_points,num_uniform_points,eps,num_trials)
+    return True
+p_accuracy_speed_tests.name='finufft.accuracy_speed_tests'
+p_accuracy_speed_tests.version="0.1"
+def test_accuracy_speed_tests(args):
+    ret=p_accuracy_speed_tests()
+    assert(ret)
+    return True
+p_accuracy_speed_tests.test=test_accuracy_speed_tests
+
+if len(sys.argv)==1:
+    sys.argv.append('test')
+    sys.argv.append('finufft.accuracy_speed_tests')
 
 PM=ProcessorManager()
-PM.registerProcessor(Processor())
+PM.registerProcessor(p_accuracy_speed_tests)
 if not PM.run(sys.argv):
-	exit(-1)
+    exit(-1)
